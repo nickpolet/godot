@@ -566,6 +566,8 @@ void BaseMaterial3D::_update_shader() {
 	// Force linear filtering for the heightmap texture, as the heightmap effect
 	// looks broken with nearest-neighbor filtering (with and without Deep Parallax).
 	String texfilter_height_str;
+
+	texture_filter = TEXTURE_FILTER_NEAREST_WITH_MIPMAPS;
 	switch (texture_filter) {
 		case TEXTURE_FILTER_NEAREST:
 			texfilter_str = "filter_nearest";
