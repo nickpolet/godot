@@ -2173,6 +2173,8 @@ CSGBrush *CSGPolygon3D::_build_brush() {
 	int end_count = 0;
 	int shape_face_count = shape_faces.size() / 3;
 	real_t curve_length = 1.0;
+	double clip_difference = clip_end - clip_start;
+	double path_start_offset = 0.0;
 	switch (mode) {
 		case MODE_DEPTH:
 			extrusions = 1;
@@ -2186,10 +2188,11 @@ CSGBrush *CSGPolygon3D::_build_brush() {
 			break;
 		case MODE_PATH: {
 			curve_length = curve->get_baked_length();
+			path_start_offset = clip_start * curve_length;
 			if (path_interval_type == PATH_INTERVAL_DISTANCE) {
-				extrusions = MAX(1, Math::ceil(curve_length / path_interval)) + 1;
+				extrusions = MAX(1, Math::ceil((curve_length * clip_difference) / path_interval)) + 1;
 			} else {
-				extrusions = Math::ceil(1.0 * curve->get_point_count() / path_interval);
+				extrusions = Math::ceil(1.0 * (curve->get_point_count() * clip_difference) / path_interval);
 			}
 			if (!path_joined) {
 				end_count = 2;
@@ -2229,7 +2232,7 @@ CSGBrush *CSGPolygon3D::_build_brush() {
 		Transform3D previous_previous_xform;
 		double u_step = 1.0 / extrusions;
 		if (path_u_distance > 0.0) {
-			u_step *= curve_length / path_u_distance;
+			u_step *= (curve_length * clip_difference) / path_u_distance;
 		}
 		double v_step = 1.0 / shape_sides;
 		double spin_step = Math::deg_to_rad(spin_degrees / spin_sides);
@@ -2239,6 +2242,7 @@ CSGBrush *CSGPolygon3D::_build_brush() {
 				extrusion_step = 1.0 / (extrusions - 1);
 			}
 			extrusion_step *= curve_length;
+			extrusion_step *= clip_difference;
 		}
 
 		if (mode == MODE_PATH) {
@@ -2246,9 +2250,18 @@ CSGBrush *CSGPolygon3D::_build_brush() {
 				base_xform = path->get_global_transform();
 			}
 
-			Vector3 current_point;
+			// Vector3 current_point;
+			// Vector3 current_up = Vector3(0, 1, 0);
+			// Vector3 direction;
+			Vector3 current_point = curve->sample_baked(path_start_offset);
+			Vector3 next_point = curve->sample_baked(extrusion_step + path_start_offset);
 			Vector3 current_up = Vector3(0, 1, 0);
-			Vector3 direction;
+			Vector3 direction = next_point - current_point;
+
+			if (path_joined) {
+				Vector3 last_point = curve->sample_baked(curve->get_baked_length() * clip_end);
+				direction = next_point - last_point;
+			}
 
 			switch (path_rotation) {
 				case PATH_ROTATION_POLYGON:
@@ -2275,6 +2288,7 @@ CSGBrush *CSGPolygon3D::_build_brush() {
 					if (path_rotation == PATH_ROTATION_PATH_FOLLOW) {
 						current_up = curve->sample_baked_up_vector(0, true);
 					}
+					current_up = curve->sample_baked_up_vector(clip_start, true);
 					break;
 			}
 
@@ -2328,10 +2342,20 @@ CSGBrush *CSGPolygon3D::_build_brush() {
 					}
 				} break;
 				case MODE_PATH: {
-					double previous_offset = x0 * extrusion_step;
-					double current_offset = (x0 + 1) * extrusion_step;
-					if (path_joined && x0 == extrusions - 1) {
-						current_offset = 0;
+					// double previous_offset = x0 * extrusion_step;
+					// double current_offset = (x0 + 1) * extrusion_step;
+					// if (path_joined && x0 == extrusions - 1) {
+					// 	current_offset = 0;
+					double previous_offset = x0 * extrusion_step + path_start_offset;
+					double current_offset = (x0 + 1) * extrusion_step + path_start_offset;
+					double next_offset = (x0 + 2) * extrusion_step + path_start_offset;
+					if (x0 == extrusions - 1) {
+						if (path_joined) {
+							current_offset = 0;
+							next_offset = extrusion_step;
+						} else {
+							next_offset = current_offset;
+						}
 					}
 
 					Vector3 previous_point = curve->sample_baked(previous_offset);
@@ -2520,6 +2544,12 @@ void CSGPolygon3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_depth", "depth"), &CSGPolygon3D::set_depth);
 	ClassDB::bind_method(D_METHOD("get_depth"), &CSGPolygon3D::get_depth);
 
+	ClassDB::bind_method(D_METHOD("set_clip_start", "clip_start"), &CSGPolygon3D::set_clip_start);
+	ClassDB::bind_method(D_METHOD("get_clip_start"), &CSGPolygon3D::get_clip_start);
+
+	ClassDB::bind_method(D_METHOD("set_clip_end", "clip_end"), &CSGPolygon3D::set_clip_end);
+	ClassDB::bind_method(D_METHOD("get_clip_end"), &CSGPolygon3D::get_clip_end);
+
 	ClassDB::bind_method(D_METHOD("set_spin_degrees", "degrees"), &CSGPolygon3D::set_spin_degrees);
 	ClassDB::bind_method(D_METHOD("get_spin_degrees"), &CSGPolygon3D::get_spin_degrees);
 
@@ -2568,6 +2598,8 @@ void CSGPolygon3D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_VECTOR2_ARRAY, "polygon"), "set_polygon", "get_polygon");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Depth,Spin,Path"), "set_mode", "get_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "depth", PROPERTY_HINT_RANGE, "0.01,100.0,0.01,or_greater,exp,suffix:m"), "set_depth", "get_depth");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "clip_start", PROPERTY_HINT_RANGE, "0.0,1.0,0.0001"), "set_clip_start", "get_clip_start");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "clip_end", PROPERTY_HINT_RANGE, "0.00001,1.0,0.0001"), "set_clip_end", "get_clip_end");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "spin_degrees", PROPERTY_HINT_RANGE, "1,360,0.1"), "set_spin_degrees", "get_spin_degrees");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "spin_sides", PROPERTY_HINT_RANGE, "3,64,1"), "set_spin_sides", "get_spin_sides");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "path_node", PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Path3D"), "set_path_node", "get_path_node");
@@ -2625,6 +2657,28 @@ void CSGPolygon3D::set_depth(const float p_depth) {
 
 float CSGPolygon3D::get_depth() const {
 	return depth;
+}
+
+void CSGPolygon3D::set_clip_start(const float p_clip_start) {
+	ERR_FAIL_COND(p_clip_start < 0.0);
+	clip_start = p_clip_start;
+	_make_dirty();
+	update_gizmos();
+}
+
+float CSGPolygon3D::get_clip_start() const {
+	return clip_start;
+}
+
+void CSGPolygon3D::set_clip_end(const float p_clip_end) {
+	ERR_FAIL_COND(p_clip_end > 1.0);
+	clip_end = p_clip_end;
+	_make_dirty();
+	update_gizmos();
+}
+
+float CSGPolygon3D::get_clip_end() const {
+	return clip_end;
 }
 
 void CSGPolygon3D::set_path_continuous_u(bool p_enable) {
@@ -2793,6 +2847,8 @@ CSGPolygon3D::CSGPolygon3D() {
 	path_local = false;
 	path_continuous_u = true;
 	path_u_distance = 1.0;
+	clip_start = 0.0;
+	clip_end = 1.0;
 	path_joined = false;
 	path = nullptr;
 }

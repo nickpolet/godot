@@ -395,6 +395,9 @@ private:
 
 	float depth;
 
+	float clip_start;
+	float clip_end;
+
 	float spin_degrees;
 	int spin_sides;
 
@@ -433,6 +436,12 @@ public:
 
 	void set_depth(float p_depth);
 	float get_depth() const;
+
+	void set_clip_start(float p_clip_start);
+	float get_clip_start() const;
+
+	void set_clip_end(float p_clip_end);
+	float get_clip_end() const;
 
 	void set_spin_degrees(float p_spin_degrees);
 	float get_spin_degrees() const;
