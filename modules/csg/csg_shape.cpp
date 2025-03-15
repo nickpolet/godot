@@ -2259,7 +2259,7 @@ CSGBrush *CSGPolygon3D::_build_brush() {
 			Vector3 direction = next_point - current_point;
 
 			if (path_joined) {
-				Vector3 last_point = curve->sample_baked(curve->get_baked_length() * clip_end);
+				Vector3 last_point = curve->sample_baked(curve->get_baked_length());
 				direction = next_point - last_point;
 			}
 
@@ -2271,8 +2271,8 @@ CSGBrush *CSGPolygon3D::_build_brush() {
 				case PATH_ROTATION_PATH:
 				case PATH_ROTATION_PATH_FOLLOW:
 					if (!path_rotation_accurate) {
-						current_point = curve->sample_baked(0);
-						Vector3 next_point = curve->sample_baked(extrusion_step);
+						current_point = curve->sample_baked(path_start_offset);
+						Vector3 next_point = curve->sample_baked(path_start_offset + extrusion_step);
 						direction = next_point - current_point;
 
 						if (path_joined) {
@@ -2280,15 +2280,15 @@ CSGBrush *CSGPolygon3D::_build_brush() {
 							direction = next_point - last_point;
 						}
 					} else {
-						Transform3D current_sample_xform = curve->sample_baked_with_rotation(0);
+						Transform3D current_sample_xform = curve->sample_baked_with_rotation(path_start_offset);
 						current_point = current_sample_xform.get_origin();
 						direction = current_sample_xform.get_basis().xform(Vector3(0, 0, -1));
 					}
 
 					if (path_rotation == PATH_ROTATION_PATH_FOLLOW) {
-						current_up = curve->sample_baked_up_vector(0, true);
+						// current_up = curve->sample_baked_up_vector(0, true);
+						current_up = curve->sample_baked_up_vector(path_start_offset, true);
 					}
-					current_up = curve->sample_baked_up_vector(clip_start, true);
 					break;
 			}
 
@@ -2362,7 +2362,7 @@ CSGBrush *CSGPolygon3D::_build_brush() {
 					Transform3D current_sample_xform = curve->sample_baked_with_rotation(current_offset);
 					Vector3 current_point = current_sample_xform.get_origin();
 					Vector3 current_up = Vector3(0, 1, 0);
-					Vector3 current_extrusion_dir = (current_point - previous_point).normalized();
+					Vector3 current_extrusion_dir = current_point - previous_point;
 					Vector3 direction;
 
 					// If the angles are similar, remove the previous face and replace it with this one.
@@ -2383,7 +2383,7 @@ CSGBrush *CSGPolygon3D::_build_brush() {
 						case PATH_ROTATION_PATH:
 						case PATH_ROTATION_PATH_FOLLOW:
 							if (!path_rotation_accurate) {
-								double next_offset = (x0 + 2) * extrusion_step;
+								double next_offset = (x0 + 2) * extrusion_step + path_start_offset;
 								if (x0 == extrusions - 1) {
 									next_offset = path_joined ? extrusion_step : current_offset;
 								}
