@@ -45,6 +45,17 @@
 #include "scene/gui/item_list.h"
 #include "scene/gui/tree.h"
 
+static const Dictionary CSG_ALLOWED_TYPES = {
+    {"Node3D", true},
+    {"CSGBox3D", true},
+    {"CSGSphere3D", true},
+    {"CSGCylinder3D", true},
+    {"CSGTorus3D", true},
+    {"CSGMeshInstance3D", true},
+    {"CSGPolygon3D", true},
+    {"CSGCombiner3D", true},
+};
+
 void CreateDialog::popup_create(bool p_dont_clear, bool p_replace_mode, const String &p_current_type, const String &p_current_name) {
 	_fill_type_list();
 
@@ -259,6 +270,11 @@ void CreateDialog::_update_search() {
 
 	for (const TypeInfo &candidate : type_info_list) {
 		String match_keyword;
+
+		if (!CSG_ALLOWED_TYPES.has(candidate.type_name)) {
+			WARN_PRINT("Candidate: " + candidate.type_name);
+            continue;
+        }
 
 		// First check if the name matches. If it does not, try the search keywords.
 		float score = _score_type(candidate.type_name, search_text);
