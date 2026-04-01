@@ -1206,6 +1206,7 @@ void SceneTreeDock::_tool_selected(int p_tool, bool p_confirm_override) {
 
 		} break;
 		case TOOL_NEW_SCENE_FROM: {
+			return;
 			if (!profile_allow_editing) {
 				break;
 			}

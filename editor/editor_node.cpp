@@ -3372,7 +3372,7 @@ void EditorNode::_menu_option_confirm(int p_option, bool p_confirmed) {
 
 	switch (p_option) {
 		case SCENE_NEW_SCENE: {
-			new_scene();
+			// new_scene();
 
 		} break;
 		case SCENE_NEW_INHERITED_SCENE:
@@ -5447,6 +5447,8 @@ void EditorNode::_add_to_recent_scenes(const String &p_scene) {
 }
 
 void EditorNode::_open_recent_scene(int p_idx) {
+	// Don't allow opening recent scenes
+	return;
 	if (p_idx == recent_scenes->get_item_count() - 1) {
 		EditorSettings::get_singleton()->set_project_metadata("recent_files", "scenes", Array());
 		callable_mp(this, &EditorNode::_update_recent_scenes).call_deferred();
@@ -8639,7 +8641,7 @@ EditorNode::EditorNode() {
 	gui_base->add_child(main_vbox);
 
 	title_bar = memnew(EditorTitleBar);
-	main_vbox->add_child(title_bar);
+	// main_vbox->add_child(title_bar);
 #endif
 
 	DockSplitContainer *main_vsplit = memnew(DockSplitContainer);
@@ -8788,7 +8790,7 @@ EditorNode::EditorNode() {
 	top_split->add_child(srt);
 
 	scene_tabs = memnew(EditorSceneTabs);
-	srt->add_child(scene_tabs);
+	// srt->add_child(scene_tabs);
 	scene_tabs->connect("tab_changed", callable_mp(this, &EditorNode::_set_current_scene));
 	scene_tabs->connect("tab_closed", callable_mp(this, &EditorNode::_scene_tab_closed));
 
@@ -9113,26 +9115,26 @@ EditorNode::EditorNode() {
 	editor_dock_manager->add_dock(SceneTreeDock::get_singleton());
 
 	memnew(ImportDock);
-	editor_dock_manager->add_dock(ImportDock::get_singleton());
+	// editor_dock_manager->add_dock(ImportDock::get_singleton());
 
 	FileSystemDock *filesystem_dock = memnew(FileSystemDock);
 	filesystem_dock->connect("inherit", callable_mp(this, &EditorNode::_inherit_request));
 	filesystem_dock->connect("instantiate", callable_mp(this, &EditorNode::_instantiate_request));
 	filesystem_dock->connect("display_mode_changed", callable_mp(this, &EditorNode::_save_editor_layout));
 	get_project_settings()->connect_filesystem_dock_signals(filesystem_dock);
-	editor_dock_manager->add_dock(filesystem_dock);
+	// editor_dock_manager->add_dock(filesystem_dock);
 
 	memnew(InspectorDock(editor_data));
 	editor_dock_manager->add_dock(InspectorDock::get_singleton());
 
 	memnew(SignalsDock);
-	editor_dock_manager->add_dock(SignalsDock::get_singleton());
+	// editor_dock_manager->add_dock(SignalsDock::get_singleton());
 
 	memnew(GroupsDock);
-	editor_dock_manager->add_dock(GroupsDock::get_singleton());
+	// editor_dock_manager->add_dock(GroupsDock::get_singleton());
 
 	history_dock = memnew(HistoryDock);
-	editor_dock_manager->add_dock(history_dock);
+	// editor_dock_manager->add_dock(history_dock);
 
 	// Add some offsets to make LEFT_R and RIGHT_L docks wider than minsize.
 	const int dock_hsize = 280;
@@ -9186,7 +9188,7 @@ EditorNode::EditorNode() {
 
 	bottom_panel = memnew(EditorBottomPanel);
 	editor_dock_manager->register_dock_slot(bottom_panel);
-	center_split->add_child(bottom_panel);
+	// center_split->add_child(bottom_panel);
 	center_split->set_dragger_visibility(SplitContainer::DRAGGER_HIDDEN);
 
 	log = memnew(EditorLog);
